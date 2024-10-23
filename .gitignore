@@ -6,6 +6,11 @@ __pycache__/
 # C extensions
 *.so
 
+# Directories
+03-storage
+05-examples
+
+
 # Distribution / packaging
 .Python
 build/
