@@ -1,6 +1,8 @@
 from methodSupport import *
 from sklearn.linear_model import Ridge, Lasso
 import autograd.numpy as anp
+import autograd as ag
+import jax as jx
 from sklearn.preprocessing import StandardScaler
 
 ## --- Gradient descent classes --- ##
@@ -91,7 +93,6 @@ class ADAM(GDTemplate):
 ## --- Helper classes  --- ##
 class Initializer:
     def __init__(self,
-                 #problem_type: str,
                  problem_case: str='1D',
                  domain: tuple=([0,1],[0,1]),
                  sample_size: list=[10,10],
@@ -112,7 +113,7 @@ class Initializer:
 
     def domain_setup(self, noise: float=0.):
         """
-        
+        Initializing the domain, x,y-vectors, and the noise contributions
         """
         x0,xN = self.domain[0]; y0,yN = self.domain[1]
 
@@ -124,7 +125,7 @@ class Initializer:
 
     def test_function(self,coefficients: list):
         """
-        
+        Initializing the chosen test function for the class
         """
 
         a = coefficients
@@ -144,7 +145,7 @@ class Initializer:
 
     def plot(self, labels=['','','',''], save=False, fig_name='generic name.png'):
         """
-        
+        For plotting the dataset
         """
 
         if self.p_case == '1D':
@@ -153,6 +154,18 @@ class Initializer:
             fig = plot2D(self.xx,self.yy,self.target,labels,save,f_name=fig_name)
 
         return fig
+    
+class ParameterStudy:
+    def __init__(self):
+        pass
+
+    def lambda_eta(self):
+        raise NotImplementedError
+    
+    def tmp_func(self):
+        raise NotImplementedError
+
+## --- Gradient classes --- ##
 
 class GradientTemplate:
     def __init__(self,lmbda=0.):
@@ -186,16 +199,41 @@ class LassoGrad(GradientTemplate):
         return OLSGrad.update_gradient(self,X,target,beta) + self.lmbda * anp.sign(beta)
     
 class AutoGrad(GradientTemplate):
+    """
+    Class using automatic differentiation from AutoGrad on the cost function to update the gradient.
+    Can be used directly by changing diff_var from default value.
+    """
     def __init__(self,
                  lmbda=0.,
-                 cost_function=mse
+                 cost_function=mse,
+                 diff_var=0
                  ):
         super().__init__(lmbda)
         self.cost = cost_function
+        self.diff_var = diff_var
 
     def update_gradient(self, X, target, beta):
         if self.cost == mse_lasso:
-            grad_func = elementwise_grad(self.cost,0)
+            grad_func = ag.elementwise_grad(self.cost,self.diff_var)
         else:
-            grad_func = grad(self.cost,0)
+            grad_func = ag.grad(self.cost,self.diff_var)
         return grad_func(beta,X,target,self.lmbda)
+    
+class JAXGrad(AutoGrad):
+    """
+    Class using automatic differentiation from JAX on the cost function to update the gradient.
+    Can be used directly by changing diff_var from default value.
+    """
+    def __init__(self, lmbda=0, cost_function=mse, diff_var=0):
+        super().__init__(lmbda,
+                         cost_function,
+                         diff_var
+                         )
+    
+    def update_gradient(self, X, target, beta):
+        if self.cost == mse_lasso:
+            grad_func = jx.grad(self.cost,self.diff_var)
+        else:
+            grad_func = jx.grad(self.cost,self.diff_var)
+        return grad_func(beta,X,target,self.lmbda)
+        

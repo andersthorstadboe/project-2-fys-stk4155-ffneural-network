@@ -28,7 +28,7 @@ def expReLu(z,alpha=1.):
 
     
 ## --- Cost functions --- ##
-def mse(beta,X,target,lmbda=0):
+def mse(beta,X,target,lmbda=None):
     return anp.sum((X @ beta - target)**2)/(target.shape[0])
 
 def mse_ridge(beta,X,target,lmbda):
@@ -245,7 +245,7 @@ def plot1D(x_data, z_data, labels: list, save=False, f_name: str='generic name.p
       ax.plot(x_data,z_data[i],label=labels[4+(i-1)],ls=line_styles[i-1])
 
    ax.set_title(labels[0]) 
-   ax.set_xlabel(labels[1]); ax.set_ylabel(labels[2])
+   ax.set_xlabel(labels[1]); ax.set_ylabel(labels[2],rotation=0,labelpad=10)
    ax.legend(); ax.grid()
    if save == True:
       fig.savefig(f_name,dpi=300,bbox_inches='tight')

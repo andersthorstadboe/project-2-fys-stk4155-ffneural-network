@@ -3,7 +3,7 @@ from classSupport import *
 from methodSupport import *
 from typing import Callable
 from sklearn.preprocessing import StandardScaler
-from sklearn.linear_model import Lasso
+from sklearn.linear_model import Lasso, SGDRegressor
 
 
 class FFNeuralNework:
@@ -18,7 +18,6 @@ class FFNeuralNework:
     def create_layers(self):
         """
         Creates the layers based on the initialization of the class
-
         """
         self.layers = []
         i_size = self.net_in_size
@@ -89,7 +88,6 @@ class LinearRegressor:
         self.gd_intcept = np.mean(target_mean - X_mean @ self.beta_gd)
 
 
-
     def linear_predict(self, X, target, predict_type='OLS',lmbda=0.):
         I = anp.eye(X.shape[1],X.shape[1])
         if predict_type == 'OLS':
@@ -117,14 +115,17 @@ class LinearRegressor:
             ):
         
         if len(x_data) == 2:
-            fig = plot2D(x_data[0],x_data[1],y_data,labels,save,fig_name)
+            plot2D(x_data[0],x_data[1],y_data,labels,save,fig_name)
         
         else:
-            fig = plot1D(x_data,y_data,labels,save,fig_name)
+            plot1D(x_data,y_data,labels,save,fig_name)
 
-        return fig
+        #return fig
 
     def reset(self):
+        """
+        Resetting some instance variables to be able to reuse class in loops
+        """
         self.beta_gd = None
         self.gd_intcept = None
 
@@ -176,7 +177,15 @@ class LogisticRegressor:
             return [1 if i >= 0.5 else 0 for i in (y_pred)]
         else:
             return y_pred
-        
+
+class ScikitLearnRegressor:
+    def __init__(self,
+                 cost_function=mse):
+        self.cost = cost_function
+
+    def gd_fit(self):
+        sdg_reg = SGDRegressor()
+
 if __name__ == '__main__':
     anp.random.seed(1)
     X = anp.array([[0, 0], [1, 0], [0, 1], [1, 1]])#, [0, 0], [1, 0], [0, 1], [1, 1], [0, 0], [1, 0], [0, 1], [1, 1]])
