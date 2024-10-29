@@ -2,22 +2,25 @@ import autograd.numpy as anp
 import numpy as np
 from autograd import grad, elementwise_grad
 import matplotlib.pyplot as plt
+import seaborn as sns
 
 ## --- Activation functions --- ##
+def identity(z):
+   return z
+
 def sigmoid(z):
     return 1 / (1 + anp.exp(-z))
    
-def softmax(z,vec=False):
-    """
-    Computes softmax values for each set of scores in the rows of the matrix z. 
-    Use with one vector at a time if vec=True, else requires batched input data.
-    """
-    if vec == False:
-        e_z = anp.exp(z - anp.max(z,axis=0))
-        return e_z / anp.sum(e_z,axis=1)[:,anp.newaxis]
-    else:
-        e_z = anp.exp(z - anp.max(z))
-        return e_z / anp.sum(e_z)
+def softmax(z):
+   """
+   Computes softmax values for each set of scores in the rows of the matrix z. 
+   """
+   e_z = anp.exp(z - anp.max(z,axis=0))
+   return e_z / anp.sum(e_z,axis=1)[:,anp.newaxis]
+   
+def softmax_vec(z):
+   e_z = anp.exp(z - anp.max(z))
+   return e_z / anp.sum(e_z)
     
 def ReLU(z):
     return anp.where(z > 0, z, 0)
@@ -29,16 +32,19 @@ def expReLu(z,alpha=1.):
     
 ## --- Cost functions --- ##
 def mse(beta,X,target,lmbda=None):
-    return anp.sum((X @ beta - target)**2)/(target.shape[0])
+   return anp.sum((X @ beta - target)**2)/(target.shape[0])
 
 def mse_ridge(beta,X,target,lmbda):
    return mse(beta,X,target) + lmbda*anp.sum(beta**2)
 
 def mse_lasso(beta,X,target,lmbda):
    return mse(beta,X,target) + lmbda*anp.abs(beta)
+
+def mse_predict(prediction,target):
+   return anp.sum((prediction - target)**2)/(target.shape[0])
     
 def cross_entropy(predict,target):
-    return anp.sum(-target * anp.log(predict))
+   return anp.sum(-target * anp.log(predict))
 
 ## --- Support functions --- ##
 def poly_model_1d(x: np.ndarray, poly_deg: int, intcept=False):
@@ -203,7 +209,8 @@ def exp2D(x,y,a):
    return a[0]*np.exp(-(x**2 + y**2)) + a[1]*np.exp(-(x-2)**2 - (y-2)**2)
 
 ## --- Plotting functions --- #
-def plot1D(x_data, z_data, labels: list, save=False, f_name: str='generic name.png'):
+def plot1D(x_data, z_data, labels=['','','','','',''],
+           save=False, f_name: str='generic name.png'):
    """
    Returns a surface plot of 2D-data functions
 
@@ -232,17 +239,20 @@ def plot1D(x_data, z_data, labels: list, save=False, f_name: str='generic name.p
       fig,ax = plt.subplots(1,1)
 
    line_styles = [None,'--','-.']
-
-   if len(labels) < 3 + len(z_data):
-      for i in range(len(z_data)-2):
-         labels.append('')
-      print('Not enough labels, list extended with empty instances as:')
-      print('labels =',labels)
+   if type(z_data) == list:
+      if len(labels) < 3 + len(z_data):
+         for i in range(len(z_data)-2):
+            labels.append('')
+         print('Not enough labels, list extended with empty instances as:')
+         print('labels =',labels)
    
    # Plotting initial data
-   ax.scatter(x_data,z_data[0],label=labels[3],color='0.15',alpha=0.65)
-   for i in range(1,len(z_data)):
-      ax.plot(x_data,z_data[i],label=labels[4+(i-1)],ls=line_styles[i-1])
+   if type(z_data) != list:
+      ax.plot(x_data,z_data,label=labels[3])
+   else:
+      ax.scatter(x_data,z_data[0],label=labels[3],color='0.15',alpha=0.65)
+      for i in range(1,len(z_data)):
+         ax.plot(x_data,z_data[i],label=labels[4+(i-1)],ls=line_styles[i-1])
 
    ax.set_title(labels[0]) 
    ax.set_xlabel(labels[1]); ax.set_ylabel(labels[2],rotation=0,labelpad=10)
@@ -250,7 +260,7 @@ def plot1D(x_data, z_data, labels: list, save=False, f_name: str='generic name.p
    if save == True:
       fig.savefig(f_name,dpi=300,bbox_inches='tight')
 
-   return 0
+   return fig,ax
 
 def plot2D(x_data, y_data, z_data, labels: list, save=False, f_name: str='generic name.png'):
    """
@@ -293,4 +303,34 @@ def plot2D(x_data, y_data, z_data, labels: list, save=False, f_name: str='generi
    if save == True:
       fig.savefig(f_name,dpi=300,bbox_inches='tight')
 
-   return 0
+   return fig,ax
+
+def lambda_eta(data,axis_vals, axis_tick_labels=['',''],
+               cbar_lim=[-10,10], cmap='viridis', 
+               save=False, f_name='generic name.png'
+               ):
+   """
+   Plotting a heatmap of input data using the Seaborn heatmap-method. 
+   Default setup with axis-labels for comparing regression parameter λ- and learning rate, η.
+   Plot can be modified by using the outputed fig,ax-objects with standard Matplotlib.pyplot-commands
+   """
+   if save == True:
+      plt.rcParams["font.size"] = 10
+      fig,ax = plt.subplots(1,1,figsize=(3.5,(5*3/4)))
+   else:
+      fig,ax = plt.subplots(1,1)
+
+   if len(axis_tick_labels) < 2: # Condition since we need tick-types for both axis, and only one is provided
+      print('ListLengthWarning: Only one tick-label provided, using the same for 2nd axis')
+      axis_tick_labels.append(axis_tick_labels)
+
+   ax = sns.heatmap(data=data,vmin=cbar_lim[0],vmax=cbar_lim[1],cmap=cmap,annot=True)
+      
+   ax.set_xticks(np.arange(len(axis_vals[0])),labels=axis_tick_labels[0])
+   ax.set_yticks(np.arange(len(axis_vals[1])),labels=axis_tick_labels[1],rotation=0)
+   ax.set_xlabel('λ'); ax.set_ylabel('η',rotation=0,labelpad=10)
+
+   if save == True:
+      fig.savefig(f_name,dpi=300,bbox_inches='tight')
+           
+   return fig,ax

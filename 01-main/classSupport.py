@@ -1,16 +1,15 @@
 from methodSupport import *
-from sklearn.linear_model import Ridge, Lasso
 import autograd.numpy as anp
 import autograd as ag
 import jax as jx
-from sklearn.preprocessing import StandardScaler
+import seaborn as sns
 
 ## --- Gradient descent classes --- ##
 class GDTemplate:
     def __init__(self,learning_rate):
         self.eta = learning_rate
 
-    def update_change(self,gradient):
+    def update_change(self,gradient,theta_m1):
         raise RuntimeError
     
     def reset(self):
@@ -67,10 +66,10 @@ class RMSprop(GDTemplate):
         self.rmsProp_update = 0.0
         
 class ADAM(GDTemplate):
-    def __init__(self, learning_rate, decay_rate_1, decay_rate_2):
+    def __init__(self, learning_rate, decay_rates):
         super().__init__(learning_rate)
-        self.decay1 = decay_rate_1
-        self.decay2 = decay_rate_2
+        self.decay1 = decay_rates[0]
+        self.decay2 = decay_rates[1]
         self.s = 0.0
         self.r = 0.0
         self.t = 1
@@ -96,14 +95,12 @@ class Initializer:
                  problem_case: str='1D',
                  domain: tuple=([0,1],[0,1]),
                  sample_size: list=[10,10],
-                 scaling=StandardScaler
                  ):
         
         #self.p_type = problem_type
         self.p_case = problem_case
         self.domain = domain
         self.N      = sample_size
-        self.scale  = scaling
         
         self.x, self.y   = None, None
         self.xx, self.yy = None, None
@@ -159,8 +156,9 @@ class ParameterStudy:
     def __init__(self):
         pass
 
-    def lambda_eta(self):
-        raise NotImplementedError
+    def lambda_eta(self,data,axis_labels,cmap='viridis'):
+        ax = sns.heatmap(data=data,cmap=cmap)
+        return ax
     
     def tmp_func(self):
         raise NotImplementedError
