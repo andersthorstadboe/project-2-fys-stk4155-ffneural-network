@@ -15,15 +15,17 @@ class FFNeuralNework:
                 activation_derivatives,
                 cost_function,
                 cost_derivative,
-                multiple_input=True
         ):
         self.net_in_size = network_input_size
         self.layer_out_size = layer_output_size
-        self.multi_input = multiple_input
         self.act_func = activation_functions
         self.act_der = activation_derivatives
         self.cost_func = cost_function
         self.cost_der = cost_derivative
+
+        self.layers = None
+        self.layers_grad = None
+        self.zs = None
 
     def create_layers(self):
         """
@@ -33,12 +35,8 @@ class FFNeuralNework:
         self.layers = []
         i_size = self.net_in_size
         for layer_out_size in self.layer_out_size:
-            #if self.multi_input == True:
             W = anp.random.randn(i_size,layer_out_size)
-                #print('W_l',W.shape)
-            #else:
-            #    W = anp.random.randn(layer_out_size,i_size)
-            #    print('W_l',W.shape)
+            #print('W_l',W.shape)
             b = anp.random.randn(layer_out_size)
             #print('b_l',b.shape)
             self.layers.append((W,b))
@@ -52,19 +50,11 @@ class FFNeuralNework:
         a = input  # Becomes last layer output, used in back-prop
         for (W, b), a_func in zip(self.layers, self.act_func):
             self.layer_inputs.append(a)
-            #if self.multi_input == True:
             '''print('W_l',W.shape)
-                print('a_l-1',a.shape)
-                print('b_l',b.shape)'''
+            print('a_l-1',a.shape)
+            print('b_l',b.shape)'''
             z = a @ W + b
-                #print('z_l',z.shape)
-            '''else:
-                print('W_l',W.shape)
-                print('a_l-1',a.shape)
-                print('b_l',b.shape)
-                z = W @ a + b
-                print('z_l',z.shape)'''
-
+            #print('z_l',z.shape)
             
             a = a_func(z)
             #print('a_l',a.shape)
@@ -78,60 +68,38 @@ class FFNeuralNework:
         for i in reversed(range(len(self.layers))):
             #prediction = self.a
             layer_in, z, act_der = self.layer_inputs[i], self.zs[i], self.act_der[i] 
-            #if self.multi_input == True:
             if i == len(self.layers)-1:
-                    '''print(self.a.shape)
-                    print(input.shape)'''
-
-                    dC_da = self.cost_der(output_predict,target)
-                    #print('dC_da',dC_da.shape)
-            else: 
-                    (W,b) = self.layers[i+1]
-                    dC_da = dC_dz @ W.T
-                    #print('dC_da',dC_da.shape)
-
-                #print('s(z)',act_der(z).shape)
+                '''print(self.a.shape)
+                print(input.shape)'''
+                dC_da = self.cost_der(output_predict,target)
                 #print('dC_da',dC_da.shape)
+            else: 
+                (W,b) = self.layers[i+1]
+                dC_da = dC_dz @ W.T
+                #print('dC_da',dC_da.shape)
+
+            #print('s(z)',act_der(z).shape)
+            #print('dC_da',dC_da.shape)
             dC_dz = dC_da * act_der(z)
-                #print('dC_dz',dC_dz.shape)
-                #print('l_in',layer_in.shape)
+            #print('dC_dz',dC_dz.shape)
+            #print('l_in',layer_in.shape)
             dC_dW = layer_in.T @ dC_dz
-                #print('dC_dW',dC_dW.shape)
+            #print('dC_dW',dC_dW.shape)
             dC_db = np.sum(dC_dz,axis=0)
-                #print('dC_db',dC_db.shape)
-            '''else:
-                if i == len(self.layers)-1:
-                    print('a_L',output_predict.shape)
-                    print('output',input.shape)
-
-                    dC_da = self.cost_der(output_predict,target)
-                    print('dC_da_L',dC_da.shape)
-                else: 
-                    (W,b) = self.layers[i+1]
-                    dC_da = dC_dz @ W
-
-
-                print('s(z)',act_der(z).shape)
-                print('dC_da',dC_da.shape)
-                dC_dz = dC_da * act_der(z)
-                print('dC_dz',dC_dz.shape)
-                print('l_in',layer_in.shape)
-                dC_dW = np.outer(dC_dz,layer_in)
-                print('dC_dW',dC_dW.shape)
-                dC_db = dC_dz
-                print('dC_db',dC_db.shape)'''
+            #print('dC_db',dC_db.shape)
 
             self.layers_grad[i] = (dC_dW,dC_db)
     
     def train_network(self,input,target,
-                      GDMethod: GDTemplate,
+                      GDMethod: list,
                       batches=1,epochs=1000):
         try:
             batch_size = input.shape[0] // batches
         except ZeroDivisionError:
             batch_size = 1
         for e in range(epochs):
-            GDMethod.reset()
+            GDMethod[0].reset()
+            GDMethod[1].reset()
             for _ in range(batches):
                 rand_idx = batch_size*anp.random.randint(batches)
                 input_i,target_i = input[rand_idx:rand_idx+batch_size], target[rand_idx:rand_idx+batch_size]
@@ -139,12 +107,20 @@ class FFNeuralNework:
                 self.back_propagation(input_i,target_i)
                 
                 for (W,b),(dW,db) in zip(self.layers,self.layers_grad):
-                    W -= GDMethod.update_change(dW,W)
-                    b -= GDMethod.update_change(db,b)
+                    #GDMethod[0].reset()
+                    #GDMethod[1].reset()
+                    #print('W',W.shape)
+                    #print('b',b.shape)
+                    W -= GDMethod[0].update_change(dW,W)
+                    b -= GDMethod[1].update_change(db,b)
 
     def score(self):
         raise NotImplementedError
         
+    def reset(self):
+        self.layers = None
+        self.layers_grad = None
+        self.zs = None
     
 class LinearRegressor:
     def __init__(self,

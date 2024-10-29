@@ -24,8 +24,14 @@ def softmax_vec(z):
     
 def ReLU(z):
     return anp.where(z > 0, z, 0)
+
+def ReLU_der(z):
+   return anp.where(z > 0, 1, 0)
+
+def LeakyReLU(z,alpha=0.01):
+   return anp.where(z >= 0, z, alpha*z)
     
-def expReLu(z,alpha=1.):
+def expReLU(z,alpha=1.):
     return anp.where(z >= 0, z, alpha*(anp.exp(z)-1))
         #return [alpha*(anp.exp(z)-1) if val < 0 else z for val in z]
 
@@ -42,6 +48,9 @@ def mse_lasso(beta,X,target,lmbda):
 
 def mse_predict(prediction,target):
    return anp.sum((prediction - target)**2)/(target.shape[0])
+
+def mse_predict_l2(prediction,target,lmbda):
+   return mse_predict(prediction,target) + lmbda*anp.sum()
     
 def cross_entropy(predict,target):
    return anp.sum(-target * anp.log(predict))
@@ -262,7 +271,10 @@ def plot1D(x_data, z_data, labels=['','','','','',''],
 
    return fig,ax
 
-def plot2D(x_data, y_data, z_data, labels: list, save=False, f_name: str='generic name.png'):
+from mpl_toolkits.mplot3d import Axes3D
+def plot2D(x_data, y_data, z_data, labels=['','','','','',''],
+           save=False, f_name: str='generic name.png'
+           ):
    """
    Returns a surface plot of 2D-data functions
 
@@ -290,22 +302,26 @@ def plot2D(x_data, y_data, z_data, labels: list, save=False, f_name: str='generi
       plt.rcParams["font.size"] = 10
       fig = plt.figure(figsize=(4.5,(5*3/4)))
    else:
-      fig = plt.figure()
+      fig = plt.figure()#figsize=(6,3))
    # Plotting initial data
    ax = fig.add_subplot(111,projection='3d')
    f1 = ax.plot_surface(x_data,y_data,z_data,cmap='viridis')
    ax.set_aspect(aspect='auto')
+   #ax.get_proj = lambda: np.dot(Axes3D.get_proj(ax), np.diag([1.0, 1.0, 0.5, 1]))  # Scale Y more than X
+   #fig.subplots_adjust(left=0, right=10, top=1, bottom=0)
    ax.view_init(elev=25, azim=-30)
    ax.set_title(labels[0]); ax.set_xlabel(labels[1])
    ax.set_ylabel(labels[2]); ax.set_zlabel(labels[3])
    ax.tick_params(axis='both', which='major', labelsize=6)
-   fig.tight_layout()
+   #fig.tight_layout()
    if save == True:
       fig.savefig(f_name,dpi=300,bbox_inches='tight')
 
    return fig,ax
 
-def lambda_eta(data,axis_vals, axis_tick_labels=['',''],
+import matplotlib.colors as mcolors
+
+def lambda_eta(data, axis_vals, axis_tick_labels=['',''],
                cbar_lim=[-10,10], cmap='viridis', 
                save=False, f_name='generic name.png'
                ):
@@ -319,13 +335,23 @@ def lambda_eta(data,axis_vals, axis_tick_labels=['',''],
       fig,ax = plt.subplots(1,1,figsize=(3.5,(5*3/4)))
    else:
       fig,ax = plt.subplots(1,1)
+   
+   mask = np.isnan(data) #(data==1)
+   #cmp = sns.color_palette(cmap, as_cmap=True)
+   #cmp = mcolors.ListedColormap(['gray'] + list(cmp(np.linspace(0, 1, 256))))
 
    if len(axis_tick_labels) < 2: # Condition since we need tick-types for both axis, and only one is provided
       print('ListLengthWarning: Only one tick-label provided, using the same for 2nd axis')
       axis_tick_labels.append(axis_tick_labels)
 
-   ax = sns.heatmap(data=data,vmin=cbar_lim[0],vmax=cbar_lim[1],cmap=cmap,annot=True)
-      
+   ax = sns.heatmap(data=data,vmin=cbar_lim[0],vmax=cbar_lim[1],cmap=cmap,annot=True,mask=mask)
+   
+   for i in range(data.shape[0]):
+    for j in range(data.shape[1]):
+        if mask[i, j]:
+            ax.add_patch(plt.Rectangle((j, i), 1, 1, color='0.15', edgecolor='none'))
+            ax.text(j + 0.5, i + 0.5, f"{data[i, j]:.1f}", ha='center', va='center', color="white")
+
    ax.set_xticks(np.arange(len(axis_vals[0])),labels=axis_tick_labels[0])
    ax.set_yticks(np.arange(len(axis_vals[1])),labels=axis_tick_labels[1],rotation=0)
    ax.set_xlabel('λ'); ax.set_ylabel('η',rotation=0,labelpad=10)
