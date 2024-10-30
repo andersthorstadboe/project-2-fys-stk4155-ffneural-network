@@ -119,10 +119,12 @@ class ADAM(GDTemplate):
 
     def update_change(self, gradient,theta_m1):
         delta = 1e-8
-        
+        #print(self.t)
+        #print(gradient.shape)
         self.s = self.decay1*self.s + (1. - self.decay1)*gradient
         self.r = self.decay2*self.r + (1. - self.decay2)*gradient*gradient
         #print('s',self.s.shape)
+        #print('r',self.r.shape)
         s_corr = self.s / (1. - self.decay1**self.t)
         r_corr = self.r / (1. - self.decay2**self.t)
         #print('grad_shape:',(self.eta * (s_corr / (anp.sqrt(r_corr) + delta)).shape))

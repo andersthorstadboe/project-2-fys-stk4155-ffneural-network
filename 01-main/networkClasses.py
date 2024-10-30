@@ -4,6 +4,7 @@ from methodSupport import *
 from typing import Callable
 from sklearn.preprocessing import StandardScaler
 from sklearn.linear_model import Lasso, SGDRegressor
+from sklearn.metrics import accuracy_score
 
 
 class FFNeuralNework:
@@ -15,6 +16,7 @@ class FFNeuralNework:
                 activation_derivatives,
                 cost_function,
                 cost_derivative,
+                random_state=1
         ):
         self.net_in_size = network_input_size
         self.layer_out_size = layer_output_size
@@ -22,6 +24,7 @@ class FFNeuralNework:
         self.act_der = activation_derivatives
         self.cost_func = cost_function
         self.cost_der = cost_derivative
+        self.random_seed = random_state
 
         self.layers = None
         self.layers_grad = None
@@ -31,6 +34,7 @@ class FFNeuralNework:
         """
         Creates the layers based on the initialization of the class
         """
+        anp.random.seed(self.random_seed)
         #print('Create layers:')
         self.layers = []
         i_size = self.net_in_size
@@ -50,14 +54,8 @@ class FFNeuralNework:
         a = input  # Becomes last layer output, used in back-prop
         for (W, b), a_func in zip(self.layers, self.act_func):
             self.layer_inputs.append(a)
-            '''print('W_l',W.shape)
-            print('a_l-1',a.shape)
-            print('b_l',b.shape)'''
             z = a @ W + b
-            #print('z_l',z.shape)
-            
             a = a_func(z)
-            #print('a_l',a.shape)
             self.zs.append(z)
         return a
 
@@ -66,11 +64,9 @@ class FFNeuralNework:
         self.layers_grad = [() for layer in self.layers]
         #print('Back-prop')
         for i in reversed(range(len(self.layers))):
-            #prediction = self.a
+
             layer_in, z, act_der = self.layer_inputs[i], self.zs[i], self.act_der[i] 
             if i == len(self.layers)-1:
-                '''print(self.a.shape)
-                print(input.shape)'''
                 dC_da = self.cost_der(output_predict,target)
                 #print('dC_da',dC_da.shape)
             else: 
@@ -89,7 +85,7 @@ class FFNeuralNework:
             #print('dC_db',dC_db.shape)
 
             self.layers_grad[i] = (dC_dW,dC_db)
-    
+
     def train_network(self,input,target,
                       GDMethod: list,
                       batches=1,epochs=1000):
@@ -97,25 +93,53 @@ class FFNeuralNework:
             batch_size = input.shape[0] // batches
         except ZeroDivisionError:
             batch_size = 1
+        #print(batch_size)
         for e in range(epochs):
             GDMethod[0].reset()
             GDMethod[1].reset()
             for _ in range(batches):
                 rand_idx = batch_size*anp.random.randint(batches)
+                #print(rand_idx,rand_idx+batch_size)
                 input_i,target_i = input[rand_idx:rand_idx+batch_size], target[rand_idx:rand_idx+batch_size]
 
                 self.back_propagation(input_i,target_i)
-                
+                #print(len(self.layers))
+                #print(len(self.layers_grad))
                 for (W,b),(dW,db) in zip(self.layers,self.layers_grad):
-                    #GDMethod[0].reset()
-                    #GDMethod[1].reset()
+                    GDMethod[0].reset()
+                    GDMethod[1].reset()
                     #print('W',W.shape)
                     #print('b',b.shape)
                     W -= GDMethod[0].update_change(dW,W)
                     b -= GDMethod[1].update_change(db,b)
+    
+    def cost(self,input,target):
+        prediction = self.feed_forward(input)
+        #layers = self.layers
+        #return cross_entropy(prediction,target)
+        return log_loss(prediction,target)
+
+    def predict(self,input,binary=False):
+        prediction = self.feed_forward(input=input)
+        #return prediction, anp.argmax(prediction,axis=1)
+        #print(prediction)
+        if binary == True:
+            return [1 if i >= 0.5 else 0 for i in (prediction)]
+        else:
+            return prediction
 
     def score(self):
         raise NotImplementedError
+    
+    def accuracy(self, predictions, targets):
+        if len(predictions.shape) < 2:
+            return accuracy_score(predictions,targets)
+        else:
+            one_hot_predictions = np.zeros(predictions.shape)
+            #print(one_hot_predictions.shape)
+            for i, prediction in enumerate(predictions):
+                one_hot_predictions[i, np.argmax(prediction)] = 1
+            return accuracy_score(one_hot_predictions, targets)
         
     def reset(self):
         self.layers = None
@@ -227,21 +251,37 @@ class LogisticRegressor:
     def __init__(self,
                  cost_function=sigmoid,
                  learning_rate=0.1,
-                 num_iterations=1
+                 num_iterations=1,
+                 random_state=1
                 ):
         self.cost_func = cost_function
         self.eta = learning_rate
         self.n_iter = num_iterations
+        self.random_state = random_state
+
         self.beta_lg = None
+
+    def design_matrix(self, x, poly_deg=1, intercept=True):
+        self.intercept = intercept
+        if len(x) == 2:
+            X = poly_model_2d(x[0],x[1],poly_deg,intercept)
+        else:
+            X = poly_model_1d(x,poly_deg,intercept)
+        return X
     
     def gd_fit(self,inputs,target, GDMethod: GDTemplate, lmbda=0. ,batches=1, epoch=100):
+        """
+        
+        """
+        anp.random.seed(self.random_state)
+        
         n_data,n_features = inputs.shape
         self.beta_lg = anp.random.randn(n_features)
         try:
             batch_size = inputs.shape[0] // batches
         except ZeroDivisionError('Num. of batches causes division by zero'):
             batch_size = 1
-
+        #print(batch_size)
         if batches <= 1:
             for _ in range(self.n_iter):
                 y_predict = self.cost_func((inputs @ self.beta_lg))
@@ -268,8 +308,15 @@ class LogisticRegressor:
         y_pred = self.cost_func(X @ self.beta_lg)
         if binary == True:
             return [1 if i >= 0.5 else 0 for i in (y_pred)]
+            #DataFrame({'predict': [1 if i >= 0.5 else 0 for i in (y_pred)]})
         else:
+            #return [1.-y_pred,y_pred]
             return y_pred
+    def accuracy(self, predictions, targets):
+        return accuracy_score(predictions,targets)
+    
+    def reset(self):
+        self.beta_lg = None
 
 class ScikitLearnRegressor:
     def __init__(self,

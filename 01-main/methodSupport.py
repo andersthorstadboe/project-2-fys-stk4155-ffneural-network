@@ -3,6 +3,9 @@ import numpy as np
 from autograd import grad, elementwise_grad
 import matplotlib.pyplot as plt
 import seaborn as sns
+from pandas import DataFrame
+from sklearn.metrics import roc_curve
+from scikitplot.metrics import plot_confusion_matrix
 
 ## --- Activation functions --- ##
 def identity(z):
@@ -10,6 +13,12 @@ def identity(z):
 
 def sigmoid(z):
     return 1 / (1 + anp.exp(-z))
+
+def sigmoid_der(z):
+    return (np.exp(-z))/((1 + np.exp(-z))**2)
+
+def tanh(z):
+   return anp.tanh(z)
    
 def softmax(z):
    """
@@ -19,11 +28,11 @@ def softmax(z):
    return e_z / anp.sum(e_z,axis=1)[:,anp.newaxis]
    
 def softmax_vec(z):
-   e_z = anp.exp(z - anp.max(z))
-   return e_z / anp.sum(e_z)
+   e_z = anp.exp(z)# - anp.max(z))
+   return e_z / anp.sum(e_z,axis=0,keepdims=True)
     
 def ReLU(z):
-    return anp.where(z > 0, z, 0)
+   return anp.where(z > 0, z, 0)
 
 def ReLU_der(z):
    return anp.where(z > 0, 1, 0)
@@ -32,8 +41,7 @@ def LeakyReLU(z,alpha=0.01):
    return anp.where(z >= 0, z, alpha*z)
     
 def expReLU(z,alpha=1.):
-    return anp.where(z >= 0, z, alpha*(anp.exp(z)-1))
-        #return [alpha*(anp.exp(z)-1) if val < 0 else z for val in z]
+   return anp.where(z >= 0, z, alpha*(anp.exp(z)-1))
 
     
 ## --- Cost functions --- ##
@@ -54,6 +62,16 @@ def mse_predict_l2(prediction,target,lmbda):
     
 def cross_entropy(predict,target):
    return anp.sum(-target * anp.log(predict))
+
+def cross_entropy_der(predict,target):
+   #return np.sum(-target/predict)
+   return (predict - target)/(predict*(1 - predict))
+
+def log_loss(predict,target):
+   return -anp.mean(target * anp.log(predict) + (1 - target) * anp.log(1-predict))
+
+def log_loss_der(predict,target):
+   return anp.mean((predict - target)/(predict*(1-predict)))
 
 ## --- Support functions --- ##
 def poly_model_1d(x: np.ndarray, poly_deg: int, intcept=False):
@@ -336,9 +354,7 @@ def lambda_eta(data, axis_vals, axis_tick_labels=['',''],
    else:
       fig,ax = plt.subplots(1,1)
    
-   mask = np.isnan(data) #(data==1)
-   #cmp = sns.color_palette(cmap, as_cmap=True)
-   #cmp = mcolors.ListedColormap(['gray'] + list(cmp(np.linspace(0, 1, 256))))
+   mask = np.isnan(data)
 
    if len(axis_tick_labels) < 2: # Condition since we need tick-types for both axis, and only one is provided
       print('ListLengthWarning: Only one tick-label provided, using the same for 2nd axis')
@@ -360,3 +376,59 @@ def lambda_eta(data, axis_vals, axis_tick_labels=['',''],
       fig.savefig(f_name,dpi=300,bbox_inches='tight')
            
    return fig,ax
+
+def confusion_roc_cumul_gains(target,probabilities):
+   ## Confusion Matrix plot
+   pred_binary = [1 if i >= 0.5 else 0 for i in (probabilities)]
+   cx = plot_confusion_matrix(target,pred_binary,normalize=True)
+   cx.set_title('Norm. confusion matrix')
+   
+   fig0,ax = plt.subplots(1,1)
+   fig1,bx = plt.subplots(1,1)
+
+   # Checking lengths of inputs are the same
+   assert len(target) == len(probabilities), "Mismatch in length of target and probabilities"
+
+   # Sort by predicted probabilities in descending order
+   data = DataFrame({'target': target, 'prediction_probabilities': probabilities})
+   data = data.sort_values(by='prediction_probabilities', ascending=False).reset_index(drop=True)
+
+   data['cumulative_class_1'] = (data['target'] == 1).cumsum()
+   data['cumulative_class_0'] = (data['target'] == 0).cumsum()
+
+   # Calculate total counts of positives and negatives
+   total_class_1 = (target == 1).sum()
+   total_class_0 = (target == 0).sum()
+
+   # Debugging: Ensure totals are correct
+   assert data['cumulative_class_1'].iloc[-1] == total_class_1, "Cumulative positives do not reach total positives"
+   assert data['cumulative_class_0'].iloc[-1] == total_class_0, "Cumulative negatives do not reach total negatives"
+   
+   # Calculate cumulative gain as a percentage for each class
+   data['cumulative_gain_class_1'] = data['cumulative_class_1'] / total_class_1 * 100
+   data['cumulative_gain_class_0'] = data['cumulative_class_0'] / total_class_0 * 100
+
+   # Calculate population percentage
+   data['population_percentage'] = anp.linspace(0, 100, len(data), endpoint=True)
+
+   ## Cumulative Gains curve
+   ax.plot(data['population_percentage'],data['cumulative_gain_class_1'],label='Class 1')
+   ax.plot(data['population_percentage'],data['cumulative_gain_class_0'],label='Class 0')
+   ax.plot([0, 100], [0, 100], color='0.1', linestyle='--', label='Baseline')
+
+   ## Calculation of ROC-curve
+   fpr,tpr, thresholds = roc_curve(target,probabilities)
+   
+   ## ROC-curve
+   bx.plot(fpr,tpr,label='ROC Curve')
+   bx.plot([0, 1], [0, 1], color='0.1', linestyle='--', label='Baseline')
+
+   
+
+   ax.set_title('Cumulative Gains Curve'); ax.set_xlabel(r'$\%$ of population'); ax.set_ylabel(r'Cumul.Gains($\%$)')
+   bx.set_title('ROC Curve'); bx.set_xlabel('False Pos. Rate'); bx.set_ylabel('True Pos. Rate')
+
+   ax.grid(); bx.grid(); ax.legend(); bx.legend()
+
+   return [[fig0,ax],[fig1,bx],[cx]]
+
