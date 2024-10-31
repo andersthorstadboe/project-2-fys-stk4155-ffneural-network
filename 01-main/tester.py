@@ -1,4 +1,50 @@
 import numpy as np
+import matplotlib.pyplot as plt
+from methodSupport import *
+
+x = np.linspace(0,2,3)
+print(x)
+b = np.random.randn(4)
+W = np.random.randn(3,4)
+print(b)
+print(W)
+z = W.T @ x +b
+a = 1/(1 + np.exp(-z))
+y = np.random.randn(4)
+print(a - y)
+#print(W.T @ x +b)
+x = np.linspace(-5,5,100)
+x2 = np.linspace(-1,1,100)
+fig,ax = plt.subplots(2,1,figsize=(4,4))
+ax[0].plot(x,x**2 + 1)#sigmoid(x),'C3')
+ax[1].plot(x2,ReLU(x2),'C2')
+ax[1].plot(x2,expReLU(x2,alpha=0.1))
+ax[1].plot(x2,LeakyReLU(x2,alpha=0.1))
+ax[0].grid(); ax[1].grid()
+ax[0].set_title('Sigmoid function')
+ax[1].set_title('Rectified Linear Unit')
+
+ax[0].set_xlim([-5.01,5.01]); ax[1].set_xlim([-1.01,1.01])
+fig.tight_layout()
+
+plt.show()
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+'''import numpy as np
 import pandas as pd
 import matplotlib.pyplot as plt
 
@@ -46,7 +92,7 @@ plt.ylabel('Cumulative Gain (%)')
 plt.title('Cumulative Gains Curve for Class 0 and Class 1')
 plt.legend()
 plt.grid(True)
-plt.show()
+plt.show()'''
 
 
 

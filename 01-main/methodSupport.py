@@ -38,10 +38,10 @@ def ReLU_der(z):
    return anp.where(z > 0, 1, 0)
 
 def LeakyReLU(z,alpha=0.01):
-   return anp.where(z >= 0, z, alpha*z)
+   return anp.where(z > 0, z, alpha*z)
     
 def expReLU(z,alpha=1.):
-   return anp.where(z >= 0, z, alpha*(anp.exp(z)-1))
+   return anp.where(z > 0, z, alpha*(anp.exp(z)-1))
 
     
 ## --- Cost functions --- ##
@@ -377,58 +377,71 @@ def lambda_eta(data, axis_vals, axis_tick_labels=['',''],
            
    return fig,ax
 
-def confusion_roc_cumul_gains(target,probabilities):
-   ## Confusion Matrix plot
-   pred_binary = [1 if i >= 0.5 else 0 for i in (probabilities)]
-   cx = plot_confusion_matrix(target,pred_binary,normalize=True)
-   cx.set_title('Norm. confusion matrix')
+def confusion_roc_cumul_gains(target,probabilities,plots='all'):
    
-   fig0,ax = plt.subplots(1,1)
-   fig1,bx = plt.subplots(1,1)
+   if plots == 'all' or plots == 'confusion':
+      ## Confusion Matrix plot
+      pred_binary = [1 if i >= 0.5 else 0 for i in (probabilities)]
+      ax = plt.axes(111)
+      ax = plot_confusion_matrix(target,pred_binary,normalize=True,title='Norm. Confusion Matrix',ax=ax)
+      ax.set_xticklabels(['Malignant','Benign']); ax.set_yticklabels(['Malignant','Benign'])#,rotation=-90,tickspad=10)
+      #cbar = ax.figure.colorbar(mappable=fig0,ax=ax)#, ticks=np.linspace(vals[i].min(), vals[i].max(), 10))
+      #cbar.ax.set_ylabel(r'$\%$', rotation=-90, va="bottom")
 
-   # Checking lengths of inputs are the same
-   assert len(target) == len(probabilities), "Mismatch in length of target and probabilities"
+   if plots == 'all' or plots == 'cumul':
 
-   # Sort by predicted probabilities in descending order
-   data = DataFrame({'target': target, 'prediction_probabilities': probabilities})
-   data = data.sort_values(by='prediction_probabilities', ascending=False).reset_index(drop=True)
+      # Checking lengths of inputs are the same
+      assert len(target) == len(probabilities), "Mismatch in length of target and probabilities"
 
-   data['cumulative_class_1'] = (data['target'] == 1).cumsum()
-   data['cumulative_class_0'] = (data['target'] == 0).cumsum()
+      # Sort by predicted probabilities in descending order
+      data = DataFrame({'target': target, 'prediction_probabilities': probabilities})
+      data = data.sort_values(by='prediction_probabilities', ascending=False).reset_index(drop=True)
 
-   # Calculate total counts of positives and negatives
-   total_class_1 = (target == 1).sum()
-   total_class_0 = (target == 0).sum()
+      data['cumulative_class_1'] = (data['target'] == 1).cumsum()
+      data['cumulative_class_0'] = (data['target'] == 0).cumsum()
 
-   # Debugging: Ensure totals are correct
-   assert data['cumulative_class_1'].iloc[-1] == total_class_1, "Cumulative positives do not reach total positives"
-   assert data['cumulative_class_0'].iloc[-1] == total_class_0, "Cumulative negatives do not reach total negatives"
-   
-   # Calculate cumulative gain as a percentage for each class
-   data['cumulative_gain_class_1'] = data['cumulative_class_1'] / total_class_1 * 100
-   data['cumulative_gain_class_0'] = data['cumulative_class_0'] / total_class_0 * 100
+      # Calculate total counts of positives and negatives
+      total_class_1 = (target == 1).sum()
+      total_class_0 = (target == 0).sum()
 
-   # Calculate population percentage
-   data['population_percentage'] = anp.linspace(0, 100, len(data), endpoint=True)
+      # Debugging: Ensure totals are correct
+      assert data['cumulative_class_1'].iloc[-1] == total_class_1, "Cumulative positives do not reach total positives"
+      assert data['cumulative_class_0'].iloc[-1] == total_class_0, "Cumulative negatives do not reach total negatives"
+      
+      # Calculate cumulative gain as a percentage for each class
+      data['cumulative_gain_class_1'] = data['cumulative_class_1'] / total_class_1 * 100
+      data['cumulative_gain_class_0'] = data['cumulative_class_0'] / total_class_0 * 100
 
-   ## Cumulative Gains curve
-   ax.plot(data['population_percentage'],data['cumulative_gain_class_1'],label='Class 1')
-   ax.plot(data['population_percentage'],data['cumulative_gain_class_0'],label='Class 0')
-   ax.plot([0, 100], [0, 100], color='0.1', linestyle='--', label='Baseline')
+      # Calculate population percentage
+      data['population_percentage'] = anp.linspace(0, 100, len(data), endpoint=True)
 
-   ## Calculation of ROC-curve
-   fpr,tpr, thresholds = roc_curve(target,probabilities)
-   
-   ## ROC-curve
-   bx.plot(fpr,tpr,label='ROC Curve')
-   bx.plot([0, 1], [0, 1], color='0.1', linestyle='--', label='Baseline')
+      ## Cumulative Gains curve plot
+      fig1,bx = plt.subplots(1,1)
+      bx.plot(data['population_percentage'],data['cumulative_gain_class_1'],label='Class 1')
+      bx.plot(data['population_percentage'],data['cumulative_gain_class_0'],label='Class 0')
+      bx.plot([0, 100], [0, 100], color='0.1', linestyle='--', label='Baseline')
 
-   
+      bx.set_title('Cumulative Gains Curve'); bx.set_xlabel(r'$\%$ of population'); bx.set_ylabel(r'Cumul.Gains($\%$)')
+      bx.grid(); bx.legend(); 
 
-   ax.set_title('Cumulative Gains Curve'); ax.set_xlabel(r'$\%$ of population'); ax.set_ylabel(r'Cumul.Gains($\%$)')
-   bx.set_title('ROC Curve'); bx.set_xlabel('False Pos. Rate'); bx.set_ylabel('True Pos. Rate')
+   if plots == 'all' or plots == 'roc':
+      ## Calculation of ROC-curve
+      fpr,tpr, thresholds = roc_curve(target,probabilities)
+      
+      fig2,cx = plt.subplots(1,1)
+      ## ROC-curve
+      cx.plot(fpr,tpr,label='ROC Curve')
+      cx.plot([0, 1], [0, 1], color='0.1', linestyle='--', label='Baseline')
 
-   ax.grid(); bx.grid(); ax.legend(); bx.legend()
+      cx.set_title('ROC Curve'); cx.set_xlabel('False Pos. Rate'); cx.set_ylabel('True Pos. Rate')
+      cx.grid(); cx.legend()
 
-   return [[fig0,ax],[fig1,bx],[cx]]
+   if plots == 'all':
+      return [[ax],[fig1,bx],[fig2,cx]]
+   elif plots == 'confusion':
+      return [ax]
+   elif plots == 'cumul':
+      return [fig1,bx]
+   elif plots == 'roc':
+      return [fig2,cx]
 

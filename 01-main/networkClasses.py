@@ -87,7 +87,7 @@ class FFNeuralNework:
             self.layers_grad[i] = (dC_dW,dC_db)
 
     def train_network(self,input,target,
-                      GDMethod: list,
+                      GDMethod: list,eta,
                       batches=1,epochs=1000):
         try:
             batch_size = input.shape[0] // batches
@@ -95,8 +95,8 @@ class FFNeuralNework:
             batch_size = 1
         #print(batch_size)
         for e in range(epochs):
-            GDMethod[0].reset()
-            GDMethod[1].reset()
+            #GDMethod[0].reset()
+            #GDMethod[1].reset()
             for _ in range(batches):
                 rand_idx = batch_size*anp.random.randint(batches)
                 #print(rand_idx,rand_idx+batch_size)
@@ -112,6 +112,8 @@ class FFNeuralNework:
                     #print('b',b.shape)
                     W -= GDMethod[0].update_change(dW,W)
                     b -= GDMethod[1].update_change(db,b)
+                    #W -= eta*dW
+                    #b -= eta*db
     
     def cost(self,input,target):
         prediction = self.feed_forward(input)
@@ -151,11 +153,13 @@ class LinearRegressor:
                  cost_function=mse,
                  learning_rate=0.1,
                  num_iterations=1,
+                 random_state=1
                 ):
         
         self.cost_func = cost_function
         self.eta = learning_rate
         self.n_iter = num_iterations
+        self.random_state = random_state
 
         self.beta_gd = None
         self.beta_linreg = None
@@ -296,9 +300,6 @@ class LogisticRegressor:
                     Xi, yi = inputs[rand_idx:rand_idx+batch_size], target[rand_idx:rand_idx+batch_size]
 
                     y_predict = self.cost_func((Xi @ self.beta_lg))
-
-                    #print(Xi.shape,self.beta_lg.shape)
-                    #print(y_predict.shape)
                     grad = 2 * (Xi.T @ (y_predict - yi)/n_data + lmbda*self.beta_lg)
               
                     self.beta_lg -= GDMethod.update_change(grad,self.beta_lg)
