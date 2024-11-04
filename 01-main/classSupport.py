@@ -90,24 +90,53 @@ class Adagrad(GDTemplate):
 
 class RMSprop(GDTemplate):
     def __init__(self, learning_rate=0.01,
-                 decay=0.9):
+                 decay=0.9,
+                 lmbda=0.0):
         super().__init__(learning_rate)
         self.rmsProp_update = 0.0
         self.decay = decay
+        self.lmbda = lmbda
 
     def update_change(self, gradient, theta_m1):
         delta = 1e-8
-        #print('grad',gradient.shape)
+
         self.rmsProp_update = self.decay * self.rmsProp_update + (1 - self.decay)*gradient*gradient
-        
-        #print('RMS:',self.rmsProp_update.shape)
-        #print('grad_shape:',(self.eta/(anp.sqrt(self.rmsProp_update + delta)) * gradient).shape)
-        return self.eta/(anp.sqrt(self.rmsProp_update + delta)) * gradient
+
+        return self.eta/(anp.sqrt(self.rmsProp_update + delta)) * gradient + self.lmbda*theta_m1
     
     def reset(self):
         self.rmsProp_update = 0.0
         
 class ADAM(GDTemplate):
+    def __init__(self, learning_rate=0.01,
+                 decay_rates=[0.9,0.99],
+                 lmbda=0.0):
+        super().__init__(learning_rate)
+        self.decay1 = decay_rates[0]
+        self.decay2 = decay_rates[1]
+        self.lmbda = lmbda
+        
+        self.s = 0.0
+        self.r = 0.0
+        self.t = 1
+
+    def update_change(self, gradient,theta_m1):
+        delta = 1e-8
+
+        self.s = self.decay1*self.s + (1. - self.decay1)*gradient
+        self.r = self.decay2*self.r + (1. - self.decay2)*gradient*gradient
+
+        s_corr = self.s / (1. - self.decay1**self.t)
+        r_corr = self.r / (1. - self.decay2**self.t)
+
+        return self.eta * (s_corr / (anp.sqrt(r_corr) + delta)) + self.lmbda*theta_m1
+    
+    def reset(self):
+        self.s = 0.; self.r = 0.
+        self.t += 1
+
+
+class ADAM1(GDTemplate):
     def __init__(self, learning_rate=0.01,
                  decay_rates=[0.9,0.99]):
         super().__init__(learning_rate)
@@ -119,15 +148,13 @@ class ADAM(GDTemplate):
 
     def update_change(self, gradient,theta_m1):
         delta = 1e-8
-        #print(self.t)
-        #print(gradient.shape)
-        self.s = self.decay1*self.s + (1. - self.decay1)*gradient
-        self.r = self.decay2*self.r + (1. - self.decay2)*gradient*gradient
-        #print('s',self.s.shape)
-        #print('r',self.r.shape)
+
+        self.s = self.decay1*self.s + (1. - self.decay1) @ gradient
+        self.r = self.decay2*self.r + (1. - self.decay2) @ (gradient @ gradient.T)
+
         s_corr = self.s / (1. - self.decay1**self.t)
         r_corr = self.r / (1. - self.decay2**self.t)
-        #print('grad_shape:',(self.eta * (s_corr / (anp.sqrt(r_corr) + delta)).shape))
+
         return self.eta * (s_corr / (anp.sqrt(r_corr) + delta))
     
     def reset(self):
@@ -143,7 +170,6 @@ class Initializer:
                  sample_size: list=[10,10],
                  ):
         
-        #self.p_type = problem_type
         self.p_case = problem_case
         self.domain = domain
         self.N      = sample_size
@@ -191,7 +217,7 @@ class Initializer:
 
     def plot(self, labels=['','','',''], save=False, fig_name='generic name.png'):
         """
-        For plotting the dataset
+        For plotting the initial dataset
         """
 
         if self.p_case == '1D':
@@ -200,17 +226,7 @@ class Initializer:
             fig = plot2D(self.xx,self.yy,self.target_mesh,labels,save,f_name=fig_name)
 
         return fig
-    
-class ParameterStudy:
-    def __init__(self):
-        pass
 
-    def lambda_eta(self,data,axis_labels,cmap='viridis'):
-        ax = sns.heatmap(data=data,cmap=cmap)
-        return ax
-    
-    def tmp_func(self):
-        raise NotImplementedError
 
 ## --- Gradient classes --- ##
 

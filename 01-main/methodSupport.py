@@ -4,7 +4,7 @@ from autograd import grad, elementwise_grad
 import matplotlib.pyplot as plt
 import seaborn as sns
 from pandas import DataFrame
-from sklearn.metrics import roc_curve
+from sklearn.metrics import roc_curve, roc_auc_score
 from scikitplot.metrics import plot_confusion_matrix
 
 ## --- Activation functions --- ##
@@ -19,17 +19,9 @@ def sigmoid_der(z):
 
 def tanh(z):
    return anp.tanh(z)
-   
-def softmax(z):
-   """
-   Computes softmax values for each set of scores in the rows of the matrix z. 
-   """
-   e_z = anp.exp(z - anp.max(z,axis=0))
-   return e_z / anp.sum(e_z,axis=1)[:,anp.newaxis]
-   
-def softmax_vec(z):
-   e_z = anp.exp(z)# - anp.max(z))
-   return e_z / anp.sum(e_z,axis=0,keepdims=True)
+
+def tanh_der(z):
+   return (1)/(anp.cosh(z)*anp.cosh(z))
     
 def ReLU(z):
    return anp.where(z > 0, z, 0)
@@ -39,9 +31,15 @@ def ReLU_der(z):
 
 def LeakyReLU(z,alpha=0.01):
    return anp.where(z > 0, z, alpha*z)
+
+def LReLU_der(z,alpha=0.01):
+   return anp.where(z > 0, 1, alpha)
     
-def expReLU(z,alpha=1.):
+def ELU(z,alpha=1.):
    return anp.where(z > 0, z, alpha*(anp.exp(z)-1))
+
+def ELU_der(z,alpha=0.01):
+   return anp.where(z > 0, 1, alpha*anp.exp(z))
 
     
 ## --- Cost functions --- ##
@@ -72,6 +70,9 @@ def log_loss(predict,target):
 
 def log_loss_der(predict,target):
    return anp.mean((predict - target)/(predict*(1-predict)))
+
+#def log_loss_der2(predict,target):
+
 
 ## --- Support functions --- ##
 def poly_model_1d(x: np.ndarray, poly_deg: int, intcept=False):
@@ -350,7 +351,7 @@ def lambda_eta(data, axis_vals, axis_tick_labels=['',''],
    """
    if save == True:
       plt.rcParams["font.size"] = 10
-      fig,ax = plt.subplots(1,1,figsize=(3.5,(5*3/4)))
+      fig,ax = plt.subplots(1,1,figsize=(5,(5*3/4)))
    else:
       fig,ax = plt.subplots(1,1)
    
@@ -360,7 +361,7 @@ def lambda_eta(data, axis_vals, axis_tick_labels=['',''],
       print('ListLengthWarning: Only one tick-label provided, using the same for 2nd axis')
       axis_tick_labels.append(axis_tick_labels)
 
-   ax = sns.heatmap(data=data,vmin=cbar_lim[0],vmax=cbar_lim[1],cmap=cmap,annot=True,mask=mask)
+   ax = sns.heatmap(data=data,vmin=cbar_lim[0],vmax=cbar_lim[1],cmap=cmap,annot=True,mask=mask,linecolor='0.5')
    
    for i in range(data.shape[0]):
     for j in range(data.shape[1]):
@@ -378,13 +379,17 @@ def lambda_eta(data, axis_vals, axis_tick_labels=['',''],
    return fig,ax
 
 def confusion_roc_cumul_gains(target,probabilities,plots='all'):
+   """
+   For creating plots for a classifiction prediction. Creates a confusion matrix, ROC-curve,
+   and a cumulative gains plot a binary classification dataset.
+   """
    
    if plots == 'all' or plots == 'confusion':
       ## Confusion Matrix plot
       pred_binary = [1 if i >= 0.5 else 0 for i in (probabilities)]
       ax = plt.axes(111)
       ax = plot_confusion_matrix(target,pred_binary,normalize=True,title='Norm. Confusion Matrix',ax=ax)
-      ax.set_xticklabels(['Malignant','Benign']); ax.set_yticklabels(['Malignant','Benign'])#,rotation=-90,tickspad=10)
+      #ax.set_xticklabels(['Malignant','Benign']); ax.set_yticklabels(['Malignant','Benign'])#,rotation=-90,tickspad=10)
       #cbar = ax.figure.colorbar(mappable=fig0,ax=ax)#, ticks=np.linspace(vals[i].min(), vals[i].max(), 10))
       #cbar.ax.set_ylabel(r'$\%$', rotation=-90, va="bottom")
 
@@ -403,10 +408,6 @@ def confusion_roc_cumul_gains(target,probabilities,plots='all'):
       # Calculate total counts of positives and negatives
       total_class_1 = (target == 1).sum()
       total_class_0 = (target == 0).sum()
-
-      # Debugging: Ensure totals are correct
-      assert data['cumulative_class_1'].iloc[-1] == total_class_1, "Cumulative positives do not reach total positives"
-      assert data['cumulative_class_0'].iloc[-1] == total_class_0, "Cumulative negatives do not reach total negatives"
       
       # Calculate cumulative gain as a percentage for each class
       data['cumulative_gain_class_1'] = data['cumulative_class_1'] / total_class_1 * 100
@@ -427,7 +428,8 @@ def confusion_roc_cumul_gains(target,probabilities,plots='all'):
    if plots == 'all' or plots == 'roc':
       ## Calculation of ROC-curve
       fpr,tpr, thresholds = roc_curve(target,probabilities)
-      
+      print('ROC-AUC: %g' %(roc_auc_score(target,probabilities)))
+      #print('Thresholds:',thresholds)
       fig2,cx = plt.subplots(1,1)
       ## ROC-curve
       cx.plot(fpr,tpr,label='ROC Curve')
