@@ -9,9 +9,9 @@ The folder structure is:
 <br /><br />
 
 ## Running the project programs
-The project programs can be found in the **01-main** folder. They are organized in different Jupyter notebooks, and can be run given that the user downloads all files in **01-main**, and keeps them in a shared directory. <br /><br />
-The notebooks imports the classes and methods from three separate files. The main class file is _networkClasses.py_, which depends on methods from both _classSupport.py_ and _methodSupport.py_. <br /><br />
-The notebook also depends on a number of different python packages, such as _autograd_, _scikit-learn_, _seaborn_, _matplotlib_ and _numpy_, so these are required to run the notebook.<br /><br />
+The project programs can be found in the **01-main** folder. They are organized in different Jupyter notebooks, and can be run given that the user downloads all files in **01-main**, and keeps them in a shared directory. <br />
+The notebooks imports the classes and methods from three separate files. The main class file is _networkClasses.py_, which depends on methods from both _classSupport.py_ and _methodSupport.py_. <br />
+The notebook also depends on a number of different python packages, such as _autograd_, _scikit-learn_, _seaborn_, _matplotlib_ and _numpy_, so these are required to run the notebook.
 
 ## Project abstract and introduction, and main conclusions and findings
 ### Abstract
@@ -27,9 +27,9 @@ As part of the project, I also implemented two SGD-regression algorithms, one fo
 
 For the purposes of verification and validation, I also use \textbf{scikit-learn}'s MLPRegressor and MLPClassifier-classes, treating them as benchmark implementations to test against \cite{scikit-learn}. In addition, I will also be using the my own results from a linear regression study looking at the Franke-function for validation of the linear regression. That report can be found here: {https://github.com/andersthorstadboe/project-1-fys-stk4155-lin-regression/tree/main/02-report}.<br />
 
-The report will, in Sec.II, go through the theoretical concepts relevant for the FFNN-algorithm, explaining the general building blocks of the network, the gradient descent methods, the backpropagation algorithm, and different activation functions for the network layers. This part will also address model selection with regards to parameter selection, and model assessment using different measures. Examples of these are mean squared error, R$^{2}$-score, model accuracy, and the confusion matrix.<br /><br />
+The report will, in Sec.II, go through the theoretical concepts relevant for the FFNN-algorithm, explaining the general building blocks of the network, the gradient descent methods, the backpropagation algorithm, and different activation functions for the network layers. This part will also address model selection with regards to parameter selection, and model assessment using different measures. Examples of these are mean squared error, R$^{2}$-score, model accuracy, and the confusion matrix.<br />
 
-The Sec.III gives an overview of how algorithms for the FFNN, and the two SGD-methods, are implemented. It also presents the general structure of the programs and a short introduction on how to access and use the different programs used in this analysis.<br /><br />
+The Sec.III gives an overview of how algorithms for the FFNN, and the two SGD-methods, are implemented. It also presents the general structure of the programs and a short introduction on how to access and use the different programs used in this analysis.<br />
 
 The final parts, Secs.IV,V of the report addresses a selection of results from the analysis of the two datasets, and presents some of main findings. Some notable results are that the network struggles with the regression dataset, but performs a lot better with the classification case. The best performance for the two datasets are MSE $\approx 0.007$, R$^{2} \approx 0.92$ for the regression analysis, and an accuracy of $\approx 0.96$ for the classification dataset. The report also has an appendix that presents some of the theoretical concepts in more detail, and also some additional results that may be of the interest to the reader. 
 
