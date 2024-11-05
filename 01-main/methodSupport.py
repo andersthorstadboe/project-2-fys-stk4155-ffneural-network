@@ -71,8 +71,6 @@ def log_loss(predict,target):
 def log_loss_der(predict,target):
    return anp.mean((predict - target)/(predict*(1-predict)))
 
-#def log_loss_der2(predict,target):
-
 
 ## --- Support functions --- ##
 def poly_model_1d(x: np.ndarray, poly_deg: int, intcept=False):
@@ -321,13 +319,13 @@ def plot2D(x_data, y_data, z_data, labels=['','','','','',''],
       plt.rcParams["font.size"] = 10
       fig = plt.figure(figsize=(4.5,(5*3/4)))
    else:
-      fig = plt.figure()#figsize=(6,3))
+      fig = plt.figure()
+
    # Plotting initial data
    ax = fig.add_subplot(111,projection='3d')
    f1 = ax.plot_surface(x_data,y_data,z_data,cmap='viridis')
    ax.set_aspect(aspect='auto')
-   #ax.get_proj = lambda: np.dot(Axes3D.get_proj(ax), np.diag([1.0, 1.0, 0.5, 1]))  # Scale Y more than X
-   #fig.subplots_adjust(left=0, right=10, top=1, bottom=0)
+
    ax.view_init(elev=25, azim=-30)
    ax.set_title(labels[0]); ax.set_xlabel(labels[1])
    ax.set_ylabel(labels[2]); ax.set_zlabel(labels[3])
@@ -389,9 +387,7 @@ def confusion_roc_cumul_gains(target,probabilities,plots='all'):
       pred_binary = [1 if i >= 0.5 else 0 for i in (probabilities)]
       ax = plt.axes(111)
       ax = plot_confusion_matrix(target,pred_binary,normalize=True,title='Norm. Confusion Matrix',ax=ax)
-      #ax.set_xticklabels(['Malignant','Benign']); ax.set_yticklabels(['Malignant','Benign'])#,rotation=-90,tickspad=10)
-      #cbar = ax.figure.colorbar(mappable=fig0,ax=ax)#, ticks=np.linspace(vals[i].min(), vals[i].max(), 10))
-      #cbar.ax.set_ylabel(r'$\%$', rotation=-90, va="bottom")
+      ax.set_xticklabels(['Malignant','Benign']); ax.set_yticklabels(['Malignant','Benign'])
 
    if plots == 'all' or plots == 'cumul':
 

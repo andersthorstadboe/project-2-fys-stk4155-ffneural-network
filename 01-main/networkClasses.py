@@ -41,8 +41,8 @@ class FFNNetwork:
         self.layers = []
         i_size = self.net_in_size
         for layer_out_size in self.layer_out_size:
-            W = anp.random.randn(i_size,layer_out_size) # * 0# 0.000001
-            b = anp.random.randn(layer_out_size) # * 0
+            W = anp.random.randn(i_size,layer_out_size)
+            b = anp.random.randn(layer_out_size)
             
             self.layers.append((W,b))
 
@@ -85,13 +85,9 @@ class FFNNetwork:
         except ZeroDivisionError:
             batch_size = 1
 
-        #print(len(self.layers))
-
         for i in range(len(self.layers)):
             self.gd_method_w.append(copy(GDMethod))
             self.gd_method_b.append(copy(GDMethod))
-
-        #print(len(self.gd_method_w))
 
         for e in range(epochs):
             for _ in range(batches):
@@ -115,17 +111,14 @@ class FFNNetwork:
     
     def cost(self,input,target):
         prediction = self.feed_forward(input)
-        #layers = self.layers
-        #return cross_entropy(prediction,target)
-        #return log_loss(prediction,target)
         return self.cost_func(prediction,target)
+    
     
     def score(self,input,target):
         """Returns the R²-score"""
         prediction = self.feed_forward(input)
         target_mean = anp.mean(target)
         return 1.0 - ((anp.sum((target - prediction)**2))/(anp.sum((target - target_mean)**2)))
-        #raise NotImplementedError
 
     def predict(self,input,binary=False):
         prediction = self.feed_forward(input=input)
@@ -133,6 +126,7 @@ class FFNNetwork:
             return [1 if i >= 0.5 else 0 for i in (prediction)]
         else:
             return prediction
+        
     
     def accuracy(self, predictions, targets): # Not working
         if len(predictions.shape) < 2:
@@ -142,6 +136,7 @@ class FFNNetwork:
             for i, prediction in enumerate(predictions):
                 one_hot_predictions[i, np.argmax(prediction)] = 1
             return accuracy_score(one_hot_predictions, targets)
+        
         
     def reset(self):
         self.layers = None
@@ -184,7 +179,7 @@ class LinearRegressor:
         
         n_data,n_features = X.shape
         self.beta_gd = anp.random.randn(n_features,1)
-        #self.beta_gd = anp.zeros((n_features,1))
+
         try:
             batch_size = X.shape[0] // batches
         except ZeroDivisionError:
@@ -198,7 +193,7 @@ class LinearRegressor:
             for e in range(epoch):
                 GDMethod.reset()
                 for _ in range(batches):
-                    # reset GDMethod here instead?
+
                     rand_idx = batch_size*anp.random.randint(batches)
                     Xi,target_i = X[rand_idx:rand_idx+batch_size], target[rand_idx:rand_idx+batch_size]
 
@@ -254,7 +249,6 @@ class LinearRegressor:
         else:
             plot1D(x_data,y_data,labels,save,fig_name)
 
-        #return fig
 
     def reset(self):
         """
@@ -335,13 +329,13 @@ class LogisticRegressor:
 
 if __name__ == '__main__':
     anp.random.seed(1)
-    X = anp.array([[0, 0], [1, 0], [0, 1], [1, 1]])#, [0, 0], [1, 0], [0, 1], [1, 1], [0, 0], [1, 0], [0, 1], [1, 1]])
-    y = anp.array([0, 0, 0, 1])#, 0, 0, 0, 1, 0, 0, 0, 1])  # This is an AND gate
+    X = anp.array([[0, 0], [1, 0], [0, 1], [1, 1]])
+    y = anp.array([0, 0, 0, 1]) # This is an AND gate
 
     n = 100; x0,xN = 0,1
     a = np.random.rand(3); d = 0.0
 
-    x = np.linspace(x0,xN,n).reshape(-1,1) #2*np.random.rand(n,1).reshape(-1,1)
+    x = np.linspace(x0,xN,n).reshape(-1,1)
     y = test_func(x,a) + np.random.normal(0, d, x.shape)
 
     X = poly_model_1d(x,3)
