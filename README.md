@@ -8,13 +8,25 @@ The folder structure is:
 - **09-archive**: <br />Preliminary files not used in the final version of the project
 <br /><br />
 
+## Running the project programs
+The project programs ...
+
 ## Project abstract and introduction, and main conclusions and findings
 ### Abstract
-
+*In this project, I am implementing three different algorithms with the aim of studying their performance against two different types of datasets, namely a continuous 2D-dataset for regression, and a binary classification dataset. The algorithms are one general purpose Feed-Forward Neural Network (FFNN), two Stochastic Gradient Descent (SGD)-algorithms, one for linear regression, and one for logistic regression. The FFNN is the main focus of the study, and I am using the two others, in addition similar Scikit-learn methods and standard linear regression, to validate the performance of the FFNN-algorithm. My study uses five different SGD-methods, and five activation functions to investigate how this choice impacts the behavior and outcomes for the network. The analysis will also address the effect from different parameters such as learning rate, regularization and mini-batches. For testing I'm using datasets generated from the 1$^{\text{st}}$ Franke function for the regression analysis, and the Wisconsin Breast Cancer Data for the classification analysis. I found the best performance for the regression case with the ReLU-activation function in the hidden layers, but the network struggled with this dataset. For the classification case, the network performed well, producing predictions that scored similarly to other model.*
 ### Introduction
-
+When dealing with real world data, there is a lot of inherent uncertainty in the datasets. Developing general purpose methods and algorithms for dealing with this uncertainty for predictions and approximations based on the data is a major driver behind the development of the class of methods named neural networks. Having general-purpose templates to produce specialized models have introduced a flexible approach to solving these real-world challenges. \cite{bishop2006pattern} \pmed
+The aim of this project is to show how to use a general \textbf{Feed-Forward Neural Network} (FFNN) to make predictions on two types of data. These types are a 2D-dataset generated for the first Franke function, and a classification dataset generated for the Wisconsin Breast Cancer Data \cite{wisconsin_(diagnostic)_17}. \pmed
+I will be presenting how the network behavior changes with different choices of parameters and method. Examples of these parameters are learning rate, regularization, and mini-batch sizes. The methods are different \textbf{Stochastic Gradient Descent} (SGD)-methods, such as momentum gradient descent and ADAM \cite{adammethod2017}. I will also see how the choices of different so-called activation functions for the layers in the FFNN impact the performance of the network.\pmed
+As part of the project, I also implemented two SGD-regression algorithms, one for linear regression, and one for logistic regression, in part for comparison purposes against the FFNN-implementation, and also to investigate the application to these kinds of datasets. These two methods also use the same SGD-methods for their gradient calculations, and will be using \textit{Mean Squared Error} and \textit{negative log-likelihood} as cost functions, respectively. \pmed
+For the purposes of verification and validation, I also use \textbf{scikit-learn}'s \textbf{MLPRegressor} and \textbf{MLPClassifier}-classes, which I treat as well-tested implementations with trustworthy outputs \cite{scikit-learn}. In addition, I am using the my own results from a linear regression study looking at the Franke-function for validation of the linear regression case\footnote{Report can be found here: \url{https://github.com/andersthorstadboe/project-1-fys-stk4155-lin-regression/tree/main/02-report}}.
+The report will, in Sec. \ref{sec:th_method}, through the theoretical concepts relevant for the FFNN-algorithm, explaining the general building blocks of the network, the gradient descent methods, a concept named automatic differentiation, different activation functions for the network layers. This part will also address model selection, specifically with regards to parameter selection, and model assessment with different error metrics. Examples of these are mean squared error, R$^{2}$-score, prediction accuracy, and the confusion matrix.\pmed
+The Sec. \ref{sec:code} gives an overview of how algorithms for the FFNN, and the two SGD-methods, are implemented. It also presents the general structure of the programs and a short introduction on how to access and use the different programs used in this analysis. \pmed
+The final parts, Secs. \ref{sec:results},\ref{sec:discussion} of the report addresses a selection of results from the analysis of the two datasets, and presents some of main findings. Some notable results are that the network struggles with the regression dataset, but performs a lot better with the classification case. The best performance for the two datasets are MSE $\approx 0.007$, R$^{2} \approx 0.92$ for the regression analysis, and an accuracy of $\approx 0.96$ for the classification dataset.\pmed
+The report also has an appendix that presents some of the theoretical concepts in more detail, and also some additional results that may be of the interest to the reader.
 
 ### Conclusion and findings
-
+Here are some of the main findings from the project:
+1. 
 
 
